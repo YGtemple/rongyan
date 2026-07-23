@@ -1,1 +1,2 @@
-[融研智笔·英语写作智能体.docx](https://github.com/user-attachments/files/30290838/default.docx)
+<img width="1273" height="632" alt="屏幕截图 2026-07-23 110107" src="https://github.com/user-attachments/assets/28d60d05-ec33-49b1-af1d-41d68ce4bd45" /><img width="1271" height="622" alt="屏幕截图 2026-07-23 110119" src="https://github.com/user-attachments/assets/3d1c7242-b5e5-4f1b-83d3-dfb58f4b2ac8" /><img width="1277" height="603" alt="屏幕截图 2026-07-23 110127" src="https://github.com/user-attachments/assets/eb05e1d6-86b1-484f-9462-f7fca4974a49" />
+[融研智笔·英语写作智能体.docx](https://github.com/user-attachments/files/30290838/default.docx)<img width="1270" height="626" alt="屏幕截图 2026-07-23 110048" src="https://github.com/user-attachments/assets/44dac0e9-a877-49fb-9b08-7161c62b2613" />
