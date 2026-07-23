@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>融研智笔·英语写作智能体</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #FCFCFD;
+            overflow-x: hidden;
+        }
+        /* 全局通用样式 */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .btn {
+            border: none;
+            border-radius: 18px;
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #4A90E2;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #3B82D6;
+        }
+        .btn-danger {
+            background: #F27272;
+            color: #fff;
+        }
+        .btn-light {
+            background: #fff;
+            border: 1px solid #eee;
+        }
+        .btn-light:hover {
+            background: #f5f7fa;
+        }
+        .input-box {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px 14px;
+            outline: none;
+            width: 100%;
+        }
+        .textarea-box {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+            outline: none;
+            resize: none;
+            width: 100%;
+        }
+        /* 标签页通用样式 */
+        .tab-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            background: #f5f7fa;
+            font-size: 14px;
+        }
+        .tab-active {
+            background: #4A90E2;
+            color: #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .tab-content.show {
+            display: block;
+        }
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        /* ==================== PC端专属样式（≥1024px） ==================== */
+        .pc-layout {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+        }
+        @media (min-width: 1024px) {
+            .pc-layout {
+                display: flex;
+            }
+            .mobile-layout {
+                display: none !important;
+            }
+        }
+
+        /* ==================== 移动端专属样式（<1024px） ==================== */
+        .mobile-layout {
+            display: none;
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 20px;
+        }
+        @media (max-width: 1023px) {
+            .mobile-layout {
+                display: block;
+            }
+            .pc-layout {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<!-- ==================== PC端三栏布局（电脑自动显示） ==================== -->
+<div class="pc-layout">
+    <!-- 左侧：学习数据分析 -->
+    <div class="w-[260px] h-full bg-[#f5f7fa] p-5 border-r border-gray-200 flex flex-col gap-4">
+        <h2 class="text-lg font-semibold text-gray-800">📊 学习数据分析</h2>
+        <div class="card p-4 flex flex-col gap-2">
+            <p id="pc-total">总作文数：0</p>
+            <p id="pc-level">评分等级：初级</p>
+            <p id="pc-point">掌握知识点：0个</p>
+        </div>
+        <h3 class="text-red-500 font-medium">🔍 薄弱知识点</h3>
+        <div id="pc-weak" class="card p-4 h-[220px] text-sm text-gray-600 overflow-y-auto">
+            暂无薄弱知识点，开始分析作文吧~
+        </div>
+        <div class="flex-1"></div>
+    </div>
+
+    <!-- 中间：核心写作区 -->
+    <div class="flex-1 h-full p-6 overflow-y-auto">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">✍️ 融研智笔·英语写作智能体</h1>
+
+        <!-- 考试类型+主题 -->
+        <div class="flex gap-4 mb-4">
+            <select id="pc-exam" class="input-box w-44">
+                <option>大学英语四级</option>
+                <option>大学英语六级</option>
+                <option>专四</option>
+                <option>专八</option>
+                <option>考研英语</option>
+                <option>雅思托福</option>
+            </select>
+            <input id="pc-topic" class="input-box flex-1" placeholder="请输入作文主题">
+        </div>
+
+        <!-- 功能按钮 -->
+        <div class="flex gap-3 mb-4">
+            <button id="pc-img" class="btn btn-light">📷 选择图片</button>
+            <button id="pc-paste" class="btn btn-light">📋 粘贴文本</button>
+            <button id="pc-clear" class="btn btn-light">🗑️ 清空内容</button>
+            <input type="file" id="img-upload" accept="image/*" class="hidden">
+        </div>
+
+        <!-- 作文草稿 -->
+        <textarea id="pc-draft" class="textarea-box h-[180px] mb-3" placeholder="请输入作文草稿..."></textarea>
+        <p id="pc-word" class="text-sm text-gray-500 mb-4">字数：0</p>
+
+        <!-- 分析/取消按钮 -->
+        <div class="flex gap-4 mb-6">
+            <button id="pc-analyze" class="btn btn-primary px-7">🚀 开始分析</button>
+            <button id="pc-cancel" class="btn btn-danger px-7">❌ 取消请求</button>
+        </div>
+
+        <!-- 标签页导航 -->
+        <div class="flex gap-1 mb-0">
+            <div class="tab-item tab-active" data-target="pc-1">📝 批改结果</div>
+            <div class="tab-item" data-target="pc-2">✨ 润色版本</div>
+            <div class="tab-item" data-target="pc-3">📚 学习计划</div>
+            <div class="tab-item" data-target="pc-4">📄 AI范文</div>
+        </div>
+
+        <!-- 标签页内容 -->
+        <div class="card h-[220px]">
+            <div class="tab-content show" id="pc-1">批改结果将在这里显示~</div>
+            <div class="tab-content" id="pc-2">润色后的高分作文将在这里显示~</div>
+            <div class="tab-content" id="pc-3">个性化学习计划将在这里显示~</div>
+            <div class="tab-content" id="pc-4">AI生成范文将在这里显示~</div>
+        </div>
+    </div>
+
+    <!-- 右侧：万能句式库 -->
+    <div class="w-[300px] h-full bg-[#f5f7fa] p-5 border-l border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">📖 万能句式库</h2>
+        <div id="pc-sentence" class="card p-4 h-[90vh] text-sm leading-relaxed overflow-y-auto">
+            1. <b style="color:#4A90E2">It goes without saying that</b> ... 不言而喻<br><br>
+            2. <b style="color:#4A90E2">In view of this situation</b> ... 鉴于这种情况<br><br>
+            3. <b style="color:#4A90E2">From what has been discussed above</b> ... 综上所述<br><br>
+            4. <b style="color:#4A90E2">It is high time that we took</b> ... 是时候采取行动<br><br>
+            5. <b style="color:#4A90E2">Only in this way can we</b> ... 只有这样才能
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 移动端专属布局（手机自动显示） ==================== -->
+<div class="mobile-layout">
+    <h1 class="text-xl font-bold text-center text-gray-800 mb-4">✍️ 融研智笔</h1>
+
+    <!-- 考试类型+主题 -->
+    <select id="m-exam" class="input-box mb-3">
+        <option>大学英语四级</option>
+        <option>大学英语六级</option>
+        <option>考研英语</option>
+        <option>雅思托福</option>
+    </select>
+    <input id="m-topic" class="input-box mb-3" placeholder="请输入作文主题">
+
+    <!-- 功能按钮 -->
+    <div class="flex gap-2 mb-3 flex-wrap">
+        <button id="m-img" class="btn btn-light text-sm">📷 选图</button>
+        <button id="m-paste" class="btn btn-light text-sm">📋 粘贴</button>
+        <button id="m-clear" class="btn btn-light text-sm">🗑️ 清空</button>
+    </div>
+
+    <!-- 作文草稿 -->
+    <textarea id="m-draft" class="textarea-box h-[150px] mb-2" placeholder="请输入作文草稿..."></textarea>
+    <p id="m-word" class="text-sm text-gray-500 mb-3">字数：0</p>
+
+    <!-- 分析/取消按钮 -->
+    <div class="flex gap-3 mb-4">
+        <button id="m-analyze" class="btn btn-primary flex-1">🚀 开始分析</button>
+        <button id="m-cancel" class="btn btn-danger flex-1">❌ 取消</button>
+    </div>
+
+    <!-- 移动端标签页 -->
+    <div class="flex gap-1 mb-2">
+        <div class="tab-item tab-active text-sm" data-target="m-1">批改</div>
+        <div class="tab-item text-sm" data-target="m-2">润色</div>
+        <div class="tab-item text-sm" data-target="m-3">计划</div>
+        <div class="tab-item text-sm" data-target="m-4">范文</div>
+    </div>
+    <div class="card h-[180px] mb-4">
+        <div class="tab-content show" id="m-1">批改结果将在这里显示~</div>
+        <div class="tab-content" id="m-2">润色后的作文将在这里显示~</div>
+        <div class="tab-content" id="m-3">学习计划将在这里显示~</div>
+        <div class="tab-content" id="m-4">AI范文将在这里显示~</div>
+    </div>
+
+    <!-- 移动端句式库 -->
+    <h3 class="font-medium text-gray-800 mb-2">📖 万能句式库</h3>
+    <div id="m-sentence" class="card p-3 h-[200px] text-sm leading-relaxed overflow-y-auto">
+        1. <b style="color:#4A90E2">It goes without saying that</b> ... 不言而喻<br><br>
+        2. <b style="color:#4A90E2">In view of this situation</b> ... 鉴于这种情况<br><br>
+        3. <b style="color:#4A90E2">From what has been discussed above</b> ... 综上所述
+    </div>
+</div>
+
+<!-- ==================== 核心JS逻辑（双端通用） ==================== -->
+<script>
+    // API配置（填写你的真实接口地址）
+    const API_URL = "";
+    // 本地存储用户数据
+    let userData = JSON.parse(localStorage.getItem("ryzb_data")) || {
+        totalEssay: 0, scoreLevel: "初级", weakPoints: [], sentenceLib: []
+    };
+
+    // 页面初始化
+    window.onload = function () {
+        initTabSwitch(); // 标签页切换
+        initEvents();    // 所有按钮/输入事件
+        renderSentence();// 渲染句式库
+    }
+
+    // ==================== 1. 标签页切换逻辑（修复内容不切换问题） ====================
+    function initTabSwitch() {
+        document.querySelectorAll(".tab-item").forEach(tab => {
+            tab.addEventListener("click", () => {
+                // 移除所有激活状态
+                const group = tab.parentElement.querySelectorAll(".tab-item");
+                group.forEach(t => t.classList.remove("tab-active"));
+                // 隐藏所有内容
+                const targetPrefix = tab.getAttribute("data-target").split("-")[0];
+                document.querySelectorAll(`[id^='${targetPrefix}-']`).forEach(c => c.classList.remove("show"));
+                // 激活当前标签
+                tab.classList.add("tab-active");
+                document.getElementById(tab.getAttribute("data-target")).classList.add("show");
+            });
+        });
+    }
+
+    // ==================== 2. 句式库渲染（API自动刷新） ====================
+    function renderSentence() {
+        const defaultSentence = [
+            "It goes without saying that ... 不言而喻",
+            "In view of this situation ... 鉴于这种情况",
+            "From what has been discussed above ... 综上所述",
+            "It is high time that we took ... 是时候采取行动",
+            "Only in this way can we ... 只有这样才能"
+        ];
+        const list = userData.sentenceLib.length ? userData.sentenceLib : defaultSentence;
+        const html = list.map((item, index) => `${index + 1}. <b style="color:#4A90E2">${item}</b>`).join("<br><br>");
+        // 双端同步刷新
+        document.getElementById("pc-sentence").innerHTML = html;
+        document.getElementById("m-sentence").innerHTML = html;
+    }
+
+    // ==================== 3. 所有交互事件绑定 ====================
+    function initEvents() {
+        // 字数统计（PC+移动端）
+        const pcDraft = document.getElementById("pc-draft");
+        const mDraft = document.getElementById("m-draft");
+        const updateWordCount = (val) => {
+            document.getElementById("pc-word").textContent = `字数：${val.length}`;
+            document.getElementById("m-word").textContent = `字数：${val.length}`;
+        };
+        pcDraft.addEventListener("input", () => updateWordCount(pcDraft.value));
+        mDraft.addEventListener("input", () => updateWordCount(mDraft.value));
+
+        // 图片上传
+        const imgUpload = document.getElementById("img-upload");
+        document.getElementById("pc-img").onclick = () => imgUpload.click();
+        document.getElementById("m-img").onclick = () => imgUpload.click();
+
+        // 清空内容
+        document.getElementById("pc-clear").onclick = () => { pcDraft.value = ""; updateWordCount(""); };
+        document.getElementById("m-clear").onclick = () => { mDraft.value = ""; updateWordCount(""); };
+
+        // 粘贴文本
+        document.getElementById("pc-paste").onclick = pasteText;
+        document.getElementById("m-paste").onclick = pasteText;
+        async function pasteText() {
+            try {
+                const text = await navigator.clipboard.readText();
+                pcDraft.value = text;
+                mDraft.value = text;
+                updateWordCount(text);
+            } catch (e) {
+                alert("粘贴失败，请手动输入内容");
+            }
+        }
+
+        // 取消按钮
+        document.getElementById("pc-cancel").onclick = () => alert("已取消当前分析请求");
+        document.getElementById("m-cancel").onclick = () => alert("已取消当前分析请求");
+
+        // 开始分析按钮
+        document.getElementById("pc-analyze").onclick = startAnalyze;
+        document.getElementById("m-analyze").onclick = startAnalyze;
+    }
+
+    // ==================== 4. 开始分析（API请求+句式刷新） ====================
+    function startAnalyze() {
+        const draft = document.getElementById("pc-draft").value || document.getElementById("m-draft").value;
+        const topic = document.getElementById("pc-topic").value || document.getElementById("m-topic").value;
+        
+        // 校验输入
+        if (!draft.trim() && !topic.trim()) {
+            alert("请输入作文主题或草稿内容！");
+            return;
+        }
+
+        // 无API时模拟刷新句式库
+        if (!API_URL) {
+            alert("API未配置，演示模式：句式库已自动刷新！");
+            // 模拟API返回的句式
+            userData.sentenceLib = [
+                "As we all know that ... 众所周知",
+                "As far as I am concerned ... 就我而言",
+                "Taking into account ... 考虑到",
+                "With the development of ... 随着...的发展"
+            ];
+            renderSentence(); // 刷新句式库
+            userData.totalEssay++;
+            localStorage.setItem("ryzb_data", JSON.stringify(userData));
+            return;
+        }
+    }
+</script>
+</body>
+</html>
