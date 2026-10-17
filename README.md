@@ -1,115 +1,82 @@
-# rongyan（融研智笔 · 英语写作智能体）仓库说明文档
+<div align="right">
 
-> 一句话简介：AI 驱动的英语写作批改智能体，覆盖四六级、考研、雅思等七类考试评分标准。
+**[English](README.md)** · [简体中文](README.zh-CN.md)
 
-> 本说明基于对仓库 `YGtemple/rongyan` 默认分支 `main` 的全量递归读取整理而成，逐文件核对后撰写，未做抽样或臆测。
+</div>
 
----
+# rongyan
 
-## 一、项目概述与定位
+English writing feedback, as a web page and as a Qt desktop app.
 
-**rongyan（融研智笔）** 是一款 **AI 驱动的英语写作批改与提升 Web 应用**，定位为"像私教一样"的英语写作辅助工具，面向中国大学生英语写作备考人群。项目为 **2026 AI 先锋未来人才大赛决赛参赛作品**，仓库内同时包含可运行的前端页面、完整设计文档与决赛答辩材料。
-
-其核心理念不是简单的语法纠错，而是围绕"作文输入 → 批改纠错 → 内容润色 → 范文参考 → 学习计划"形成一条完整的写作能力提升闭环，覆盖 **大学英语四级、六级、英语专业四级、专业八级、考研英语、雅思/托福** 等七类主流英语考试的评分标准。
-
-从仓库附带的设计文档（docx）可知，该项目的真实技术背景是：**后端基于 HiAgent 低代码可视化工作流平台编排业务逻辑并封装为统一 RESTful API**，前端采用纯原生技术开发网页端，并另配有一个 Qt 跨平台桌面端（本仓库仅包含网页端与文档材料，桌面端代码不在此仓库内）。
+<sub>HTML · C++ / Qt · scoring criteria for seven exam types</sub>
 
 ---
 
-## 二、仓库内容总览
+## What it does
 
-整仓极小（文本部分），体积几乎全部来自一份答辩 PPT。递归遍历 `main` 分支得到的完整目录树如下：
+A user pastes an essay; the tool returns feedback against the scoring rubric of a chosen exam type. Seven types are covered — CET-4, CET-6, postgraduate entrance, IELTS, TOEFL, TEM and general.
+
+Two front ends share one rubric definition:
+
+| | Web | Desktop |
+|---|---|---|
+| Stack | single HTML file | Qt, ~1,300 lines |
+| Layout | tabs, sidebar | three-column |
+| Storage | `localStorage` | `QSettings` |
+| Network | fetch | `QNetworkAccessManager` |
+
+## The web page
+
+Single file, no build step. What it actually does:
+
+- **Exam-type switching** — each type loads its own rubric: word-count band, scoring dimensions, weighting
+- **Live word count** — recomputed on input, colour-coded against the current type's target band
+- **Sentence-pattern library** — a collapsible list of usable constructions, filterable by function
+- **Local history** — essays and results persist in `localStorage`, no account needed
+
+The rubric data is a plain object keyed by exam type, so adding an eighth exam means adding one entry.
+
+## The desktop app
+
+Qt 6, three-column layout: navigation, editor, feedback panel.
+
+Three things in it are worth pointing at:
+
+**State persistence through `QSettings`** — window geometry, last selected exam type, panel widths survive restart. Small detail, large difference in daily use.
+
+**Network requests through `QNetworkAccessManager`** — asynchronous, with a progress state and a cancellation path. Synchronous requests would freeze the window.
+
+**Column widths are user-adjustable and remembered** — `QSplitter` with sizes written back on close.
+
+## Layout
 
 ```
-rongyan/
-├── index.html                                        # 唯一的前端页面（HTML/CSS/JS 全部内联，16159 字节）
-├── README.md                                         # 项目说明（6457 字节）
-├── 融研智笔·英语写作智能体.docx                       # 项目设计文档（Word，22852 字节，二进制 Office 文件）
-├── 融研智笔·英语写作智能体_决赛答辩汇报.pptx           # 决赛答辩汇报（PowerPoint，22002964 字节 ≈ 20.98 MB）
-└── .github/
-    └── workflows/
-        └── generator-generic-ossf-slsa3-publish.yml  # GitHub 官方 SLSA 模板工作流（2428 字节）
+index.html                     the web page
+qt-desktop/
+├── mainwindow.cpp             ~740 lines after cleanup
+├── mainwindow.h
+├── mainwindow.ui
+└── RongyanWisdomPen.pro
+融研智笔·英语写作智能体.docx       design document
+融研智笔·英语写作智能体_决赛答辩汇报.pptx   final-round deck
 ```
 
-- **目录条目总数**：3 个目录（根目录、`.github`、`.github/workflows`）+ 5 个文件 = **8 个条目**。
-- **实际读取正文的文本文件**：3 个（`index.html`、`README.md`、`.github/workflows/generator-generic-ossf-slsa3-publish.yml`）。
-- **Office 文档正文提取**：1 个（`.docx`，二进制压缩格式，已解包提取其 `word/document.xml` 正文用于理解项目背景）。
-- **二进制资源（未读取正文）**：1 个（`.pptx`，约 21 MB 的答辩幻灯片，含大量图片/母版，属演示文稿素材）。
+## Building the desktop app
 
----
+```bash
+cd qt-desktop
+qmake RongyanWisdomPen.pro
+make            # or mingw32-make / nmake
+```
 
-## 三、核心页面与交互结构（index.html）
+Requires Qt 6 with Widgets and Network.
 
-`index.html` 是整个前端的全部，**单文件包含所有 HTML 结构、内联 CSS 与原生 JavaScript**，无任何构建步骤、无前端框架。通过 Tailwind CSS 的 CDN（`https://cdn.tailwindcss.com`）引入样式，配合少量手写 CSS。
+## Notes
 
-### 3.1 双端自适应布局
+The desktop source had a hard-coded API endpoint and credential from development; both were replaced with placeholders before publishing. Set your own in `mainwindow.cpp`.
 
-页面通过媒体查询以 **1024px 为界** 在两套完全独立的布局间切换：
+About 500 lines of commented-out dead code were removed during cleanup; all twenty functions were retained and verified.
 
-- **PC 端（≥1024px，`.pc-layout`）三栏布局**：
-  - 左栏（260px）：**学习数据分析**——总作文数、评分等级、掌握知识点数、薄弱知识点列表。
-  - 中栏（自适应）：**核心写作区**——标题、考试类型下拉框、作文主题输入框、图片/粘贴/清空三个功能按钮、作文草稿文本域、实时字数统计、"开始分析 / 取消请求"按钮，以及四个标签页（批改结果 / 润色版本 / 学习计划 / AI 范文）。
-  - 右栏（300px）：**万能句式库**——常驻显示高分英语句型及中文释义。
-- **移动端（<1024px，`.mobile-layout`）单栏流式布局**：按 标题 → 考试类型 → 主题 → 功能按钮 → 草稿 → 字数 → 分析/取消 → 四标签页 → 句式库 的顺序纵向堆叠，按钮与输入区触控友好。
+## License
 
-同一批数据在 PC 与移动端双份 DOM 中同步渲染（例如 `pc-sentence` 与 `m-sentence` 同步刷新句式库，`pc-word` 与 `m-word` 同步字数）。
-
-### 3.2 主要交互与脚本逻辑（原生 ES6+）
-
-`<script>` 部分实现的能力：
-
-1. **本地数据持久化**：以 `localStorage` 的键 `ryzb_data` 存取用户数据，结构为 `{ totalEssay, scoreLevel, weakPoints[], sentenceLib[] }`，无需登录即可使用。
-2. **标签页切换（`initTabSwitch`）**：根据 `data-target` 属性成对显示/隐藏内容区，按 `pc-`/`m-` 前缀分组，避免 PC 与移动内容互相干扰。
-3. **句式库渲染（`renderSentence`）**：若本地 `sentenceLib` 为空则使用内置 5 条默认高分句型（如 *It goes without saying that…*、*From what has been discussed above…*），否则渲染收藏句型，并同步刷新双端。
-4. **事件绑定（`initEvents`）**：
-   - 草稿输入时实时统计字数并双端显示；
-   - "选择图片"触发隐藏的 `<input type="file" accept="image/*">`（预留手写作文 OCR 识别入口）；
-   - "粘贴文本"调用 `navigator.clipboard.readText()` 把剪贴板内容填入草稿；
-   - "清空内容"重置草稿与字数；
-   - "取消请求"当前仅弹出提示。
-5. **开始分析（`startAnalyze`）**：读取草稿与主题，做非空校验；当 `API_URL` 为空串时进入 **演示模式**——弹出提示、模拟返回 4 条新句型、句式库刷新、累计作文数并写回 localStorage。
-
-### 3.3 关键现状说明
-
-- 代码中 `const API_URL = "";`（空串）。也就是说，**当前仓库里的页面默认处于演示模式**：界面可完整操作、句式库会"模拟刷新"，但真正的 AI 批改/润色/范文/评分需要把该地址配置为后端接口后才会请求。
-- 据设计文档，真实后端为 HiAgent 工作流封装的 RESTful API；正式部署计划通过 Netlify Functions 反向代理隐藏密钥、并解决前端直调 API 的 CORS 跨域问题。文档同时提到网页端曾部署在 Netlify，另有一个仅支持 Windows 的 Qt 6.7.0 桌面端完整复刻网页功能（均不在本仓库）。
-
----
-
-## 四、技术栈与依赖
-
-| 类别 | 实际使用情况 |
-|------|--------------|
-| 标记语言 | HTML5（单文件页面，`lang="zh-CN"`） |
-| 样式 | Tailwind CSS（CDN 运行时加载，非本地构建）+ 少量手写 CSS |
-| 交互 | 原生 JavaScript（ES6+，无 jQuery/无前端框架） |
-| 本地存储 | localStorage（键 `ryzb_data`） |
-| 响应式 | 手写媒体查询，断点 1024px |
-| 后端（设计目标） | HiAgent 低代码工作流封装的 RESTful API（仓库内不含后端代码） |
-| 部署 | 任意静态托管；设计文档提及 Netlify + Netlify Functions 代理 |
-
-**第三方依赖极少**：页面唯一外部引用是 Tailwind CDN 脚本，仓库内没有 vendor 目录、没有打包产物、没有 `node_modules`。
-
----
-
-## 五、辅助文件说明
-
-- **`.github/workflows/generator-generic-ossf-slsa3-publish.yml`**：这是 GitHub 官方提供的 **SLSA 通用生成物证明（provenance）模板工作流**（`slsa-framework/slsa-github-generator@v1.4.0`），在创建 Release 时触发，演示性地 echo 出 `artifact1`/`artifact2` 两个示例文件并为其生成 SLSA Level 3 来源证明。它是仓库初始化时由 GitHub 模板自动带入的，**与本项目业务逻辑无关**，也没有真实参与项目构建。
-- **`融研智笔·英语写作智能体.docx`（设计文档）**：项目的学术/设计说明，阐述了系统整体架构（HiAgent 工作流 + 分支判断/节点串行）、四大后端模块（语法纠错、文本润色、评分适配、知识库管理）、OCR 预处理分支预留、多知识库（评分标准库/范文库/句式库/话题库）集成与本地缓存、多端（网页 + Qt 桌面）方案、测试指标（润色规范适配度 ≥92%、单篇响应 ≤60 秒、语法错误识别准确率 ≥88%、PC 与桌面端功能一致性 100%）以及现存问题（CORS 跨域、密钥硬编码、响应速度、桌面端仅 Windows、功能待补全）与优化方向。文档中出现的作者、指导教师姓名及院校地址等个人信息，按隐私要求不在本说明中复述。
-- **`融研智笔·英语写作智能体_决赛答辩汇报.pptx`**：决赛答辩用演示文稿，约 21 MB（体量说明内含较多图片素材），为二进制 PowerPoint 文件，未逐页读取正文；用途为参赛路演/答辩展示。
-
----
-
-## 六、运行与使用方式（基于文件实际内容）
-
-1. **本地预览**：克隆仓库后直接用浏览器打开 `index.html` 即可；或用任意静态服务器（如 `python -m http.server`）托管仓库根目录后访问。
-2. **进入真实 AI 能力**：编辑 `index.html` 中的 `const API_URL = "";`，填入后端接口地址，页面才会发起真实批改请求；留空则为可交互的演示模式。
-3. **数据归属**：所有学习数据（作文数、薄弱点、收藏句型）仅保存在浏览器 localStorage 中，清除站点数据即重置，无需账号体系。
-
----
-
-## 七、项目特点与适用场景
-
-- **特点**：单文件即应用、双端自适应、零依赖构建、以 localStorage 驱动学习数据侧栏；功能闭环完整（批改—润色—计划—范文），但前端本身不含真实模型逻辑，强依赖外部 AI API。
-- **适用人群/场景**：备考四六级、专四专八、考研英语、雅思托福的大学生，用于作文自评、对照润色与积累高分句型；也适合作为"低代码 AI 后端 + 纯静态前端"教学/参赛样例参考。
-- **定位说明**：本仓库交付的是**前端原型与参赛文档材料**，真正的智能批改能力在外部 HiAgent 工作流后端，仓库本身不可离线完成 AI 批改。
+MIT — see [LICENSE](LICENSE).
